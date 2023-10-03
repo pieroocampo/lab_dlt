@@ -1,16 +1,15 @@
-
 <img src="https://raw.githubusercontent.com/Databricks-BR/lab_dlt/main/images/lab_dlt.png">
 
-# Criando seu pipeline de Delta Live Tables
+# Creando su pipeline de Delta Live Tables
 
 
-## Conteúdo
+## Contenido
 
-* Notebook SQL `DLT_Credit_Cards_SQL` que contém o código para criarmos o Delta Live Tables pipeline e fazermos a ingestão, tratamento e qualidade de dados e depois a agregação das informações para o time de negócios.
-( JSON de exemplo para importarmos os parâmetros pré preenchidos (para pessoas que querem criar seus artefatos de maneira programática)
+* Cuaderno SQL `DLT_Credit_Cards_SQL` que contiene el código para crear nuestro pipeline de Delta Live Tables y realizar la ingestión, tratamiento y calidad de datos, seguido de la agregación de la información para el equipo de negocios.
+( JSON de ejemplo para importar los parámetros prellenados (para personas que deseen crear sus artefactos de forma programática)
 
-## Criando o pipeline do DLT usando a UI
+## Creando el pipeline de DLT utilizando la interfaz de usuario
 
 
 
-## Criando o pipeline do DLT importando o JSON de exemplo
+## Creando el pipeline de DLT importando el JSON de ejemplo

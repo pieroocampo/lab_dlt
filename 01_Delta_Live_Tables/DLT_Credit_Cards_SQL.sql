@@ -1,21 +1,21 @@
 -- Databricks notebook source
 -- MAGIC %md
--- MAGIC # Criando um pipeline de Delta Live Tables com expectativas de qualidade de dados em SQL
+-- MAGIC # Creando un pipeline de Delta Live Tables con expectativas de calidad de datos en SQL
 -- MAGIC
+-- MAGIC En este cuaderno, realizamos la ingestión de datos JSON que están siendo generados por el cuaderno de ejemplo (`Credit_Card_Transaction_Data_Generator`) en una tabla de landing utilizando el Auto-loader, y luego procesamos los datos para asegurarnos de que no estamos propagando registros que no cumplen con nuestras reglas de negocio.
 -- MAGIC
--- MAGIC
--- MAGIC Neste notebook, fazemos a ingestão de dados JSON que estão sendo gerados pelo notebook de exemplo (`Credit_Card_Transaction_Data_Generator`) para uma tabela de landing utilizando o Auto-loader, e depois fazemos o tratamento dos dados para garantir que não estamos propagando registros que não atendam nossas regras de negócios.
 
 -- COMMAND ----------
 
 -- MAGIC %md
--- MAGIC ### 1. Definindo os widgets do nosso Delta Live Tables Pipeline
--- MAGIC Definimos parâmetros que serão utilizados em nosso pipeline de dados para buscarmos os dados na landing zone e definirmos:
--- MAGIC - O caminho dos arquivos fonte
--- MAGIC - O formato dos arquivos fonte
--- MAGIC - O nome da tabela bronze
--- MAGIC - A opção de inferir os tipos das colunas de nossos arquivos fonte
--- MAGIC - O nome da tabela prata
+-- MAGIC ### 1. Definiendo los widgets de nuestro pipeline de Delta Live Tables
+-- MAGIC Definimos parámetros que se utilizarán en nuestro pipeline de datos para buscar los datos en la zona de aterrizaje y definir:
+-- MAGIC - La ruta de los archivos fuente
+-- MAGIC - El formato de los archivos fuente
+-- MAGIC - El nombre de la tabla bronze
+-- MAGIC - La opción de inferir los tipos de columnas de nuestros archivos fuente
+-- MAGIC - El nombre de la tabla silver
+-- MAGIC
 
 -- COMMAND ----------
 
@@ -29,8 +29,9 @@
 -- COMMAND ----------
 
 -- MAGIC %md
--- MAGIC ###2. Ingerindo os dados em JSON para a nossa tabela bronze incremental (Delta)
--- MAGIC Declaramos nossa tabela incremental com a sintaxe de `CREATE STREAMING LIVE TABLE` e passando os parâmetros de caminho e formato dos dados de origem.
+-- MAGIC ### 2. Ingeriendo los datos en formato JSON en nuestra tabla bronze incremental (Delta)
+-- MAGIC Declaramos nuestra tabla incremental utilizando la sintaxis de `CREATE STREAMING LIVE TABLE` y especificamos los parámetros de ruta y formato de los datos de origen.
+-- MAGIC
 
 -- COMMAND ----------
 
@@ -41,69 +42,51 @@ SELECT * FROM cloud_files("${landing_path}", "${bronze_data_format}")
 -- COMMAND ----------
 
 -- MAGIC %md
--- MAGIC ###3. Criando nossa tabela prata, incremental e com expectativas de qualidade
--- MAGIC Aqui, vamos declarar a nossa tabela prata limpa, que aplica regras de negócio para garantir que nossos processos que dependem dos dados que estamos ingerindo terão informações íntegras para trabalhar.
--- MAGIC Também aplicamos transformações dos tipos dos dados para que os processos dependentes não precisem se preocupar com gestão de formatos de dados.
+-- MAGIC ### 3. Creando nuestra tabla silver, incremental y con expectativas de calidad
+-- MAGIC Aquí, declararemos nuestra tabla silver limpia, que aplica reglas de negocio para asegurar que nuestros procesos que dependen de los datos que estamos ingiriendo tendrán información íntegra para trabajar. También aplicamos transformaciones a los tipos de datos para que los procesos
+-- MAGIC
 
 -- COMMAND ----------
 
 CREATE STREAMING LIVE TABLE ${clean_silver_table} (
-  -- Nome do estabelecimento não pode ser vazio
+  -- El nombre del establecimiento no puede estar vacío
   CONSTRAINT merchant_name_not_null EXPECT (merchant_name IS NOT NULL) ON VIOLATION DROP ROW
-  -- A bandeira do cartão precisa estar na lista de cartões pré aprovados
-  ,CONSTRAINT card_network_in_approved_list EXPECT (card_network in ('Mastercard', 'Visa', 'Elo', 'Amex')) ON VIOLATION DROP ROW
-  -- Número de parcelas tem que ser maior do que zero
+  -- La red de la tarjeta debe estar en la lista de tarjetas preaprobadas
+  ,CONSTRAINT card_network_in_approved_list EXPECT (card_network IN ('Mastercard', 'Visa', 'Elo', 'Amex')) ON VIOLATION DROP ROW
+  -- El número de cuotas debe ser mayor que cero
   ,CONSTRAINT installments_greater_than_zero EXPECT (installments > 0) ON VIOLATION DROP ROW
-  -- Validando o BIN (primeiros dígitos) dos cartões de crédito com as bandeiras de cada um deles 
-  ,CONSTRAINT card_bin_in_card_network EXPECT ((card_network = 'Mastercard' and card_bin in (51, 52, 53, 54)) or (card_network = 'Visa' and card_bin in (4)) or (card_network = 'Amex' and card_bin in (34, 37)) or (card_network = 'Elo' and card_bin in (636368, 636369, 438935, 504175, 451416, 636297, 5067, 4576, 4011, 506699))) ON VIOLATION DROP ROW
-  -- Garantindo que o nome da pessoa dona do cartão está preenchido corretamente
-  ,CONSTRAINT card_holder_not_null EXPECT (card_holder is not NULL) ON VIOLATION DROP ROW
-  -- O valor da conta tem que ser maior que zero se for um pagamento, ou menor que zero se for um chargeback (devolução)
-  ,CONSTRAINT bill_value_valid EXPECT (((bill_value > 0) and (transaction_type = 'expense')) or ((bill_value < 0) and (transaction_type = 'chargeback'))) ON VIOLATION DROP ROW
-  -- A data de validade do cartão tem que ser posterior à data da transação
-  ,CONSTRAINT card_expiration_date_valid EXPECT (card_expiration_date > `timestamp`) ON VIOLATION DROP ROW
-)
-AS
-SELECT 
-  transaction_id
-  ,type AS transaction_type
-  ,to_timestamp(`timestamp`) as `timestamp`
-  ,merchant_type
-  ,merchant_name
-  ,card_holder
-  ,currency
-  ,card_network
-  ,CAST(card_bin as LONG) AS card_bin
-  ,CAST(bill_value as DOUBLE) AS bill_value
-  ,CAST(installments AS INT) as installments
-  ,last_day(to_date(card_expiration_date,"MM/yy")) AS card_expiration_date
-FROM 
-  stream(live.${bronze_table_name})
+  -- Validando el BIN (primeros dígitos) de las tarjetas de crédito con las redes correspondientes 
+  ,CONSTRAINT card_bin_in_card_network EXPECT ((card_network = 'Mastercard' AND card_bin IN (51, 52, 53, 54)) OR (card_network = 'Visa' AND card_bin IN (4)) OR (card_network = 'Amex' AND card_bin IN (34, 37)) OR (card_network = 'Elo' AND card_bin IN (636368, 636369, 438935, 504175, 451416, 636297, 5067, 4576, 4011, 506699))) ON VIOLATION DROP ROW
+  -- Garantizando que
+
 
 -- COMMAND ----------
 
 -- MAGIC %md
--- MAGIC ###4. Agregando nossos dados diariamente para melhorar a performance (e reduzir custos) para o time de negócios que fará as análises de vendas
+-- MAGIC ### 4. Agregando nuestros datos diariamente para mejorar el rendimiento (y reducir costos) para el equipo de negocios que realizará análisis de ventas
+-- MAGIC
 
 -- COMMAND ----------
 
+
 CREATE LIVE TABLE ${aggregated_gold_table} (
-  merchant_type STRING COMMENT "Merchant type that was involved in the transactions",
-  card_network STRING COMMENT "Card network that issued the credit cards that made the transactions",
-  timestamp_day DATE COMMENT "Date in which the transactions happened",
-  sum_bill_value DOUBLE COMMENT "Sum of the amount that was transactioned in that date for that card network and merchant"
+  merchant_type STRING COMMENT "Tipo de establecimiento involucrado en las transacciones",
+  card_network STRING COMMENT "Red de tarjetas que emitió las tarjetas de crédito que realizaron las transacciones",
+  timestamp_day DATE COMMENT "Fecha en la que ocurrieron las transacciones",
+  sum_bill_value DOUBLE COMMENT "Suma del monto que se transaccionó en esa fecha para esa red de tarjetas y tipo de establecimiento"
 )
 
-  COMMENT "Daily aggregated gold table for all transactional data grouped by card network and merchant type"
+  COMMENT "Tabla gold agregada diariamente para todos los datos transaccionales agrupados por red de tarjetas y tipo de establecimiento"
 
 AS
 
 SELECT
   merchant_type
   ,card_network
-  ,CAST(date_trunc('DAY', `timestamp`) AS DATE)   as timestamp_day
-  ,SUM(bill_value)                                as sum_bill_value
+  ,CAST(date_trunc('DAY', `timestamp`) AS DATE) AS timestamp_day
+  ,SUM(bill_value) AS sum_bill_value
 FROM
   LIVE.${clean_silver_table}
 GROUP BY
   ALL
+

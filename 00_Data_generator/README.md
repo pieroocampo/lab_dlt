@@ -1,13 +1,9 @@
-
 <img src="https://raw.githubusercontent.com/Databricks-BR/lab_dlt/main/images/lab_dlt.png">
 
+# Creando datos artificialmente y generando archivos `.json`
 
-# Criando dados artificialmente e criando arquivos `.json` 
+## Contenido
 
-## Conteúdo
-
-
-Notebook `Credit_Card_Transaction_Data_Generator`, que gera dados fictícios de transações de cartão de crédito em estabelecimentos de 4 categorias: `restaurantes`, `farmacias e estética`, `cinemas`, `varejo` e bandeiras de cartão. 
+El cuaderno `Credit_Card_Transaction_Data_Generator` genera datos ficticios de transacciones con tarjeta de crédito en establecimientos de 4 categorías: `restaurantes`, `farmacias y estética`, `cines`, `venta al por menor` y marcas de tarjetas.
 </br>
-O notebook também gera dados inconsistentes com regras de negócio para que possamos explorar se nossas regras de negócio estão funcionandio corretamente
-
+El cuaderno también genera datos inconsistentes con las reglas de negocio para que podamos explorar si nuestras reglas de negocio están funcionando correctamente.
