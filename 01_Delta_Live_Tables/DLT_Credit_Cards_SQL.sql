@@ -63,7 +63,23 @@ CREATE STREAMING LIVE TABLE ${clean_silver_table} (
   ,CONSTRAINT bill_value_valid EXPECT (((bill_value > 0) and (transaction_type = 'expense')) or ((bill_value < 0) and (transaction_type = 'chargeback'))) ON VIOLATION DROP ROW
   -- La fecha de vencimiento de la tarjeta debe ser mayor a la fecha de la transacción
   ,CONSTRAINT card_expiration_date_valid EXPECT (card_expiration_date > `timestamp`) ON VIOLATION DROP ROW
-
+)
+AS
+SELECT 
+  transaction_id
+  ,type AS transaction_type
+  ,to_timestamp(`timestamp`) as `timestamp`
+  ,merchant_type
+  ,merchant_name
+  ,card_holder
+  ,currency
+  ,card_network
+  ,CAST(card_bin as LONG) AS card_bin
+  ,CAST(bill_value as DOUBLE) AS bill_value
+  ,CAST(installments AS INT) as installments
+  ,last_day(to_date(card_expiration_date,"MM/yy")) AS card_expiration_date
+FROM 
+  stream(live.${bronze_table_name})
 
 -- COMMAND ----------
 
