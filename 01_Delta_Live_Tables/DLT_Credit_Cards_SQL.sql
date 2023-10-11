@@ -57,7 +57,12 @@ CREATE STREAMING LIVE TABLE ${clean_silver_table} (
   ,CONSTRAINT installments_greater_than_zero EXPECT (installments > 0) ON VIOLATION DROP ROW
   -- Validando el BIN (primeros dígitos) de las tarjetas de crédito con las redes correspondientes 
   ,CONSTRAINT card_bin_in_card_network EXPECT ((card_network = 'Mastercard' AND card_bin IN (51, 52, 53, 54)) OR (card_network = 'Visa' AND card_bin IN (4)) OR (card_network = 'Amex' AND card_bin IN (34, 37)) OR (card_network = 'Elo' AND card_bin IN (636368, 636369, 438935, 504175, 451416, 636297, 5067, 4576, 4011, 506699))) ON VIOLATION DROP ROW
-  -- Garantizando que
+   -- Garantizando que el nombre de la persona está escrito correctamente
+  ,CONSTRAINT card_holder_not_null EXPECT (card_holder is not NULL) ON VIOLATION DROP ROW
+  -- El valor de un pago debe ser mayor a cero, y el de un reembolso menor a 0
+  ,CONSTRAINT bill_value_valid EXPECT (((bill_value > 0) and (transaction_type = 'expense')) or ((bill_value < 0) and (transaction_type = 'chargeback'))) ON VIOLATION DROP ROW
+  -- La fecha de vencimiento de la tarjeta debe ser mayor a la fecha de la transacción
+  ,CONSTRAINT card_expiration_date_valid EXPECT (card_expiration_date > `timestamp`) ON VIOLATION DROP ROW
 
 
 -- COMMAND ----------
