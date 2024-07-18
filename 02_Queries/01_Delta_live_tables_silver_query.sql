@@ -7,4 +7,4 @@ SELECT
 	rcct.installments as `Cuotas`,
 	rcct.transaction_type as `Tipo de transacción`
 FROM
-	main.dlt_demo_credit_cards.merchant_credit_card_transactions rcct
+	workspace.workshop.merchant_credit_card_transactions_<SU NOMBRE> rcct

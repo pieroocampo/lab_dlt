@@ -4,7 +4,7 @@
 
 # COMMAND ----------
 
-default_path = f"""dbfs:/Users/{spark.sql("SELECT current_user() as my_username").collect()[0]["my_username"]}/demos/dlt_credit_cards"""
+default_path = f"""/Volumes/workspace/landing/{spark.sql("SELECT current_user() as my_username").collect()[0]["my_username"]}/demos/dlt_credit_cards"""
 
 # COMMAND ----------
 
@@ -260,3 +260,4 @@ while (nb_of_interactions > 0):
         buffer_messages = buffer_messages + 1
     producer.write_records_to_file(destination_path=path)
     nb_of_interactions = nb_of_interactions - 1
+    print(nb_of_interactions)
